@@ -1,0 +1,414 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  candidat
+  entreprise
+  admin
+}
+
+enum Disponibilite {
+  sur_site
+  distance
+  les_deux
+}
+
+enum ModeMission {
+  sur_site
+  distance
+  les_deux
+}
+
+enum DureeType {
+  courte
+  longue
+}
+
+enum TypeTarif {
+  horaire
+  forfait
+  mensuel
+}
+
+enum Devise {
+  EUR
+  FCFA
+}
+
+enum MoyenPaiement {
+  orange_money
+  wave
+  moov_money
+  stripe
+  virement
+}
+
+enum StatutMission {
+  brouillon
+  publiee
+  confirmee
+  paiement_securise
+  en_cours
+  terminee
+  payee
+  annulee
+  litige
+}
+
+enum StatutCandidature {
+  envoyee
+  acceptee
+  declinee
+}
+
+enum StatutPaiement {
+  en_attente
+  retenu_en_sequestre
+  effectue
+  echoue
+}
+
+enum TypeMouvementSolde {
+  credit_mission
+  debit_retrait
+}
+
+enum StatutRetrait {
+  en_cours
+  recu
+  echoue
+}
+
+enum StatutVerification {
+  en_attente
+  validee
+  refusee
+}
+
+enum TypeVerification {
+  identite_entreprise
+  justificatif_entreprise
+}
+
+enum MotifSignalement {
+  non_paiement
+  guet_apens_suspecte
+  menace_extorsion
+  autre
+}
+
+enum StatutSignalement {
+  nouveau
+  en_cours
+  traite
+}
+
+enum StatutLitige {
+  ouvert
+  en_examen
+  resolu
+}
+
+enum DecisionLitige {
+  paiement_candidat
+  remboursement_entreprise
+  partage
+  compte_suspendu
+}
+
+model Pays {
+  id                        String   @id @default(cuid())
+  code                      String   @unique
+  nom                       String
+  devise                    Devise
+  actif                     Boolean  @default(false)
+  moyensPaiementDisponibles String
+  dateCreation              DateTime @default(now())
+
+  users                  User[]
+  entreprises            Entreprise[]
+  missions               Mission[]
+  configsCommission      ConfigCommission[]
+  comptesBancairesAdmin  CompteBancaireAdmin[]
+  virementsCommission    VirementCommission[]
+
+  @@map("pays")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  role           Role
+  email          String   @unique
+  telephone      String?
+  motDePasseHash String
+  paysId         String
+  pays           Pays     @relation(fields: [paysId], references: [id])
+  langue         String   @default("fr")
+  compteSuspendu Boolean  @default(false)
+  dateCreation   DateTime @default(now())
+
+  profilCandidat     ProfilCandidat?
+  entreprise         Entreprise?
+  signalementsEmis   Signalement[]     @relation("SignalementsEmis")
+  signalementsRecus  Signalement[]     @relation("SignalementsRecus")
+  litigesOuverts     Litige[]
+  messagesEnvoyes    MessageInterne[]
+
+  @@map("users")
+}
+
+model ProfilCandidat {
+  userId               String         @id
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nom                  String
+  prenom               String
+  competences          String?
+  disponibilite        Disponibilite
+  localisation         String?
+  moyenPaiementPrefere MoyenPaiement?
+  identifiantPaiement  String?
+  candidatures         Candidature[]
+  solde                Solde?
+  retraits             Retrait[]
+
+  @@map("profils_candidats")
+}
+
+model Entreprise {
+  userId           String    @id
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nomEntreprise    String
+  identifiantLegal String?
+  adresse          String?
+  paysId           String
+  pays             Pays      @relation(fields: [paysId], references: [id])
+  missions         Mission[]
+  verifications    Verification[]
+
+  @@map("entreprises")
+}
+
+model Mission {
+  id             String        @id @default(cuid())
+  entrepriseId   String
+  entreprise     Entreprise    @relation(fields: [entrepriseId], references: [userId])
+  paysId         String
+  pays           Pays          @relation(fields: [paysId], references: [id])
+  titre          String
+  description    String
+  mode           ModeMission
+  lieu           String?
+  dureeType      DureeType
+  dateDebut      DateTime?
+  dateFin        DateTime?
+  typeTarif      TypeTarif
+  montantBrut    Float
+  devise         Devise        @default(EUR)
+  tauxCommission Float
+  statut         StatutMission @default(brouillon)
+  dateCreation   DateTime      @default(now())
+  dateTerminee   DateTime?
+
+  candidatures    Candidature[]
+  paiement        Paiement?
+  mouvementsSolde MouvementSolde[]
+  litige          Litige?
+  signalements    Signalement[]
+  messages        MessageInterne[]
+
+  @@index([statut])
+  @@map("missions")
+}
+
+model Candidature {
+  id           String            @id @default(cuid())
+  missionId    String
+  mission      Mission           @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  candidatId   String
+  candidat     ProfilCandidat    @relation(fields: [candidatId], references: [userId])
+  message      String?
+  statut       StatutCandidature @default(envoyee)
+  dateCreation DateTime          @default(now())
+
+  @@unique([missionId, candidatId])
+  @@map("candidatures")
+}
+
+model Paiement {
+  id                            String         @id @default(cuid())
+  missionId                     String         @unique
+  mission                       Mission        @relation(fields: [missionId], references: [id])
+  devise                        Devise
+  moyenPaiement                 MoyenPaiement?
+  montantBrut                   Float
+  commission                    Float
+  fraisPaiement                 Float
+  montantNetCandidat            Float
+  statut                        StatutPaiement @default(en_attente)
+  datePaiement                  DateTime?
+  referencePrestatairePaiement  String?
+
+  @@map("paiements")
+}
+
+model ConfigCommission {
+  id            String    @id @default(cuid())
+  paysId        String
+  pays          Pays      @relation(fields: [paysId], references: [id])
+  dureeType     DureeType
+  taux          Float
+  dateEffective DateTime  @default(now())
+
+  @@index([paysId, dureeType, dateEffective])
+  @@map("config_commissions")
+}
+
+model Solde {
+  candidatId        String         @id
+  candidat          ProfilCandidat @relation(fields: [candidatId], references: [userId])
+  montantDisponible Float          @default(0)
+  devise            Devise
+  dateMaj           DateTime       @default(now())
+
+  mouvements MouvementSolde[]
+
+  @@map("soldes")
+}
+
+model MouvementSolde {
+  id           String             @id @default(cuid())
+  soldeId      String
+  solde        Solde              @relation(fields: [soldeId], references: [candidatId])
+  type         TypeMouvementSolde
+  montant      Float
+  missionId    String?
+  mission      Mission?           @relation(fields: [missionId], references: [id])
+  retraitId    String?
+  retrait      Retrait?           @relation(fields: [retraitId], references: [id])
+  dateCreation DateTime           @default(now())
+
+  @@map("mouvements_solde")
+}
+
+model Retrait {
+  id                            String        @id @default(cuid())
+  candidatId                    String
+  candidat                      ProfilCandidat @relation(fields: [candidatId], references: [userId])
+  montant                       Float
+  devise                        Devise
+  moyenRetrait                  MoyenPaiement
+  identifiantDestinataire       String
+  statut                        StatutRetrait @default(en_cours)
+  dateDemande                   DateTime      @default(now())
+  dateTraitement                DateTime?
+  referencePrestatairePaiement  String?
+
+  mouvements MouvementSolde[]
+
+  @@map("retraits")
+}
+
+model Verification {
+  id                String             @id @default(cuid())
+  entrepriseId      String
+  entreprise        Entreprise         @relation(fields: [entrepriseId], references: [userId])
+  type              TypeVerification
+  statut            StatutVerification @default(en_attente)
+  documentReference String?
+  dateVerification  DateTime?
+  dateCreation      DateTime           @default(now())
+
+  @@map("verifications")
+}
+
+model Signalement {
+  id           String            @id @default(cuid())
+  auteurId     String
+  auteur       User              @relation("SignalementsEmis", fields: [auteurId], references: [id])
+  cibleId      String
+  cible        User              @relation("SignalementsRecus", fields: [cibleId], references: [id])
+  missionId    String?
+  mission      Mission?          @relation(fields: [missionId], references: [id])
+  motif        MotifSignalement
+  description  String
+  statut       StatutSignalement @default(nouveau)
+  dateCreation DateTime          @default(now())
+
+  @@map("signalements")
+}
+
+model Litige {
+  id              String          @id @default(cuid())
+  missionId       String          @unique
+  mission         Mission         @relation(fields: [missionId], references: [id])
+  ouvertParId     String
+  ouvertPar       User            @relation(fields: [ouvertParId], references: [id])
+  motif           String
+  elementsFournis String?
+  statut          StatutLitige    @default(ouvert)
+  decision        DecisionLitige?
+  dateOuverture   DateTime        @default(now())
+  dateResolution  DateTime?
+
+  @@map("litiges")
+}
+
+model MessageInterne {
+  id           String   @id @default(cuid())
+  missionId    String
+  mission      Mission  @relation(fields: [missionId], references: [id])
+  expediteurId String
+  expediteur   User     @relation(fields: [expediteurId], references: [id])
+  contenu      String
+  dateEnvoi    DateTime @default(now())
+
+  @@index([missionId, dateEnvoi])
+  @@map("messages_internes")
+}
+
+enum StatutVirementCommission {
+  en_cours
+  recu
+  echoue
+}
+
+// Pas de saisie libre d'IBAN au moment du virement (voir additif §4) : un CompteBancaireAdmin
+// doit exister au préalable (semé en base pour l'instant, pas d'UI de création — voir README).
+model CompteBancaireAdmin {
+  id               String   @id @default(cuid())
+  paysId           String
+  pays             Pays     @relation(fields: [paysId], references: [id])
+  devise           Devise
+  ibanOuEquivalent String
+  nomTitulaire     String
+  dateCreation     DateTime @default(now())
+
+  virements VirementCommission[]
+
+  @@map("comptes_bancaires_admin")
+}
+
+model VirementCommission {
+  id                            String                    @id @default(cuid())
+  paysId                        String
+  pays                          Pays                      @relation(fields: [paysId], references: [id])
+  devise                        Devise
+  montant                       Float
+  compteBancaireId              String
+  compteBancaire                CompteBancaireAdmin       @relation(fields: [compteBancaireId], references: [id])
+  statut                        StatutVirementCommission  @default(en_cours)
+  dateDemande                   DateTime                  @default(now())
+  dateTraitement                DateTime?
+  referencePrestatairePaiement  String?
+
+  @@map("virements_commission")
+}
