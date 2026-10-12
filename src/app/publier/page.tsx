@@ -10,7 +10,7 @@ export default async function PublierPage() {
   const session = await getSession();
 
   if (!session) redirect("/connexion?redirect=/publier");
-  if (session.role !== "entreprise") redirect("/");
+  if (session.role !== "entreprise") redirect("/?msg=entreprise_requise");
 
   const entreprise = await db.entreprise.findUniqueOrThrow({ where: { userId: session.userId } });
 
