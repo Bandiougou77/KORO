@@ -7,6 +7,7 @@ import { liberationsAutomatiquesEnRetard } from "@/lib/payment";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MessageThread } from "@/components/MessageThread";
 import { ReportButton } from "@/components/ReportButton";
+import { ActionButton } from "@/components/ActionButton";
 import { marquerMissionTerminee } from "@/actions/candidatures";
 
 export const metadata = { title: "Mon compte — Kôrô" };
@@ -100,11 +101,15 @@ export default async function MonComptePage() {
                           <p className="hint" style={{ marginBottom: 12 }}>
                             Le paiement est sécurisé. Marquez la mission comme terminée une fois le travail effectué.
                           </p>
-                          <form action={marquerMissionTerminee.bind(null, mission.id)} style={{ marginBottom: 12 }}>
-                            <button type="submit" className="btn btn-gold">
-                              Marquer la mission comme terminée
-                            </button>
-                          </form>
+                          <div style={{ marginBottom: 12 }}>
+                            <ActionButton
+                              action={marquerMissionTerminee.bind(null, mission.id)}
+                              label="Marquer la mission comme terminée"
+                              pendingLabel="Enregistrement…"
+                              className="btn btn-gold"
+                              confirmMessage="Confirmer que la mission est terminée ?"
+                            />
+                          </div>
                         </>
                       )}
 

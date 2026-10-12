@@ -89,7 +89,10 @@ export async function acceptCandidature(
   return {};
 }
 
-export async function declineCandidature(candidatureId: string): Promise<void> {
+export async function declineCandidature(
+  candidatureId: string,
+  _prevState: ActionState,
+): Promise<ActionState> {
   const session = await requireRole("entreprise");
 
   const candidature = await db.candidature.findUniqueOrThrow({
@@ -97,16 +100,20 @@ export async function declineCandidature(candidatureId: string): Promise<void> {
     include: { mission: true },
   });
   if (candidature.mission.entrepriseId !== session.userId) {
-    throw new Error("Vous ne pouvez pas modifier cette candidature.");
+    return { error: "Vous ne pouvez pas modifier cette candidature." };
   }
 
   await db.candidature.update({ where: { id: candidatureId }, data: { statut: "declinee" } });
 
   revalidatePath("/entreprise/dashboard");
   revalidatePath("/moncompte");
+  return {};
 }
 
-export async function marquerMissionTerminee(missionId: string): Promise<void> {
+export async function marquerMissionTerminee(
+  missionId: string,
+  _prevState: ActionState,
+): Promise<ActionState> {
   const session = await requireRole("candidat");
 
   const candidature = await db.candidature.findFirst({
@@ -114,10 +121,10 @@ export async function marquerMissionTerminee(missionId: string): Promise<void> {
     include: { mission: true },
   });
   if (!candidature) {
-    throw new Error("Vous n'êtes pas le candidat retenu pour cette mission.");
+    return { error: "Vous n'êtes pas le candidat retenu pour cette mission." };
   }
   if (candidature.mission.statut !== "paiement_securise") {
-    throw new Error("Cette mission ne peut pas être marquée comme terminée dans son état actuel.");
+    return { error: "Cette mission ne peut pas être marquée comme terminée dans son état actuel." };
   }
 
   await db.mission.update({
@@ -127,4 +134,5 @@ export async function marquerMissionTerminee(missionId: string): Promise<void> {
 
   revalidatePath("/moncompte");
   revalidatePath("/entreprise/dashboard");
+  return {};
 }

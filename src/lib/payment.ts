@@ -40,14 +40,20 @@ export async function libererSequestre(missionId: string) {
     where: { id: missionId },
     include: { paiement: true },
   });
-  if (!mission.paiement || mission.paiement.statut !== "retenu_en_sequestre") {
+  if (!mission.paiement) {
     throw new Error("Aucun paiement séquestré à libérer pour cette mission.");
   }
 
-  await db.paiement.update({
-    where: { missionId },
+  // updateMany conditionné sur le statut courant : une seule des requêtes concurrentes
+  // (double-clic, double appel) peut faire passer le statut de retenu_en_sequestre à effectue —
+  // les autres matchent 0 ligne et échouent proprement, évitant un double crédit du solde.
+  const { count } = await db.paiement.updateMany({
+    where: { missionId, statut: "retenu_en_sequestre" },
     data: { statut: "effectue", datePaiement: new Date() },
   });
+  if (count === 0) {
+    throw new Error("Aucun paiement séquestré à libérer pour cette mission.");
+  }
   await db.mission.update({ where: { id: missionId }, data: { statut: "payee" } });
 
   const candidatureAcceptee = await db.candidature.findFirst({

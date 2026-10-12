@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { MessageThread } from "@/components/MessageThread";
 import { LitigeButton } from "@/components/LitigeButton";
 import { ReportButton } from "@/components/ReportButton";
+import { ActionButton } from "@/components/ActionButton";
 import { declineCandidature } from "@/actions/candidatures";
 import { cancelMission } from "@/actions/missions";
 import { confirmerEtLibererPaiement } from "@/actions/paiements";
@@ -92,18 +93,21 @@ export default async function EntrepriseDashboardPage() {
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <StatusBadge statut={mission.statut} kind="mission" />
                     {mission.statut === "terminee" && (
-                      <form action={confirmerEtLibererPaiement.bind(null, mission.id)}>
-                        <button type="submit" className="btn btn-gold">
-                          Confirmer et libérer le paiement
-                        </button>
-                      </form>
+                      <ActionButton
+                        action={confirmerEtLibererPaiement.bind(null, mission.id)}
+                        label="Confirmer et libérer le paiement"
+                        pendingLabel="Libération…"
+                        className="btn btn-gold"
+                        confirmMessage="Confirmer la libération du paiement vers le candidat ? Cette action est irréversible."
+                      />
                     )}
                     {peutAnnuler && (
-                      <form action={cancelMission.bind(null, mission.id)}>
-                        <button type="submit" className="btn btn-ghost">
-                          Annuler
-                        </button>
-                      </form>
+                      <ActionButton
+                        action={cancelMission.bind(null, mission.id)}
+                        label="Annuler"
+                        pendingLabel="Annulation…"
+                        confirmMessage="Annuler cette mission ?"
+                      />
                     )}
                   </div>
                 </div>
@@ -164,11 +168,11 @@ export default async function EntrepriseDashboardPage() {
                                 candidatureId={c.id}
                                 moyensDisponibles={mission.pays.moyensPaiementDisponibles.split(",").map((m) => m.trim()).filter(Boolean)}
                               />
-                              <form action={declineCandidature.bind(null, c.id)}>
-                                <button type="submit" className="btn btn-ghost">
-                                  Décliner
-                                </button>
-                              </form>
+                              <ActionButton
+                                action={declineCandidature.bind(null, c.id)}
+                                label="Décliner"
+                                pendingLabel="…"
+                              />
                             </>
                           )}
                           <ReportButton cibleId={c.candidatId} missionId={mission.id} label="Signaler" />

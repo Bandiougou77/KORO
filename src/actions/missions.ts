@@ -55,18 +55,22 @@ export async function createMission(
   redirect(`/offres/${mission.id}`);
 }
 
-export async function cancelMission(missionId: string): Promise<void> {
+export async function cancelMission(
+  missionId: string,
+  _prevState: ActionState,
+): Promise<ActionState> {
   const session = await requireRole("entreprise");
 
   const mission = await db.mission.findUniqueOrThrow({ where: { id: missionId } });
   if (mission.entrepriseId !== session.userId) {
-    throw new Error("Vous ne pouvez pas annuler cette mission.");
+    return { error: "Vous ne pouvez pas annuler cette mission." };
   }
   if (mission.statut === "payee") {
-    throw new Error("Impossible d'annuler une mission déjà payée.");
+    return { error: "Impossible d'annuler une mission déjà payée." };
   }
 
   await db.mission.update({ where: { id: missionId }, data: { statut: "annulee" } });
   revalidatePath("/offres");
   revalidatePath("/entreprise/dashboard");
+  return {};
 }

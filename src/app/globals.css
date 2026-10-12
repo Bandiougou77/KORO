@@ -64,6 +64,13 @@
   .nav-cta{
     display:flex; gap:12px; align-items:center;
   }
+  .nav-right{
+    display:flex; gap:12px; align-items:center;
+  }
+  .nav-toggle{
+    display:none; background:none; border:none; cursor:pointer; padding:6px;
+    color:var(--ink); align-items:center; justify-content:center;
+  }
   .btn{
     font-family:inherit; font-size:14.5px; font-weight:600;
     padding:10px 20px; border-radius:8px; border:none; cursor:pointer;
@@ -198,8 +205,11 @@
   .pill{
     font-family: var(--font-ibm-plex-mono), monospace; font-size:12.5px;
     padding:8px 14px; border-radius:999px;
-    border:1px solid var(--line); background:transparent; color:var(--paper);
+    border:1px solid var(--line-dark); background:transparent; color:var(--ink);
     cursor:pointer; opacity:0.7;
+  }
+  .feed-section .pill{
+    border-color:var(--line); color:var(--paper);
   }
   .pill.active{
     background:var(--gold); color:var(--ink); border-color:var(--gold); opacity:1; font-weight:600;
@@ -225,9 +235,10 @@
   .job-badges{display:flex; gap:8px;}
   .badge{
     font-family: var(--font-ibm-plex-mono), monospace; font-size:11px;
-    padding:4px 9px; border-radius:6px; border:1px solid var(--line); opacity:0.75;
+    padding:4px 9px; border-radius:6px; border:1px solid var(--line-dark); opacity:0.75;
     white-space:nowrap;
   }
+  .job-card .badge{border-color:var(--line);}
   .badge.remote{border-color:rgba(227,163,62,0.5); color:var(--gold-soft); opacity:1;}
   .job-pay{text-align:right;}
   .job-pay .amount{font-family: var(--font-space-grotesk), sans-serif; font-weight:700; font-size:16px;}
@@ -295,9 +306,17 @@
     .hero h1{font-size:38px;}
     .steps{grid-template-columns:1fr;}
     .commission{grid-template-columns:1fr; padding:32px;}
-    .job-card{grid-template-columns:1fr; text-align:left; gap:12px;}
+    .job-card{grid-template-columns:1fr !important; text-align:left; gap:12px;}
     .job-pay{text-align:left;}
-    .nav-links{display:none;}
+    .nav-toggle{display:flex;}
+    .nav-links{
+      display:none; position:absolute; top:72px; left:0; right:0;
+      flex-direction:column; gap:0; padding:8px 0;
+      background:var(--paper); border-bottom:1px solid var(--line-dark);
+      box-shadow:0 12px 24px rgba(0,0,0,0.08);
+    }
+    .nav-links.open{display:flex;}
+    .nav-links a{padding:14px 32px; opacity:1; display:block;}
     footer .wrap{flex-direction:column;}
   }
 
@@ -394,6 +413,13 @@ p.form-error{
   font-weight: 500;
   margin-bottom: 16px;
 }
+/* Sur fond sombre (.job-card, .apply-card, .calc-card), le même rouge composité devient trop
+   sombre pour un contraste WCAG AA correct — texte plus clair + fond plus opaque. */
+.job-card p.form-error, .apply-card p.form-error, .calc-card p.form-error{
+  background: rgba(240,120,95,0.22);
+  border-color: rgba(240,120,95,0.45);
+  color: #F5A590;
+}
 .field input, .field select, .field textarea{
   width:100%; padding:14px 16px; border-radius:10px; border:1.5px solid var(--line-dark);
   background:var(--paper); font-family: var(--font-ibm-plex-sans), sans-serif; font-size:15px; color:var(--ink);
@@ -436,7 +462,7 @@ p.form-error{
 .apply-card{
   background:var(--ink); color:var(--paper); border-radius:18px; padding:28px; position:sticky; top:96px;
 }
-.apply-card .amount-big{font-family: var(--font-space-grotesk), sans-serif; font-weight:700; font-size:30px; margin-bottom:2px;}
+.apply-card .amount-big, .calc-card .amount-big{font-family: var(--font-space-grotesk), sans-serif; font-weight:700; font-size:30px; margin-bottom:2px;}
 .apply-card .amount-note{font-size:12.5px; opacity:0.6; margin-bottom:22px;}
 .apply-steps{list-style:none; margin:20px 0; padding:0;}
 .apply-steps li{
