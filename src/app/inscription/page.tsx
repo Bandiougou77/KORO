@@ -10,6 +10,7 @@ export default function InscriptionPage() {
   const searchParams = useSearchParams();
   const initialRole = searchParams.get("role") === "entreprise" ? "entreprise" : "candidat";
   const [role, setRole] = useState<"candidat" | "entreprise">(initialRole);
+  const compteRequis = searchParams.get("msg") === "compte_entreprise_requis";
 
   const [candidatState, candidatAction, candidatPending] = useActionState(
     registerCandidat,
@@ -30,6 +31,22 @@ export default function InscriptionPage() {
         <p className="hint" style={{ marginBottom: 20 }}>
           Kôrô est disponible au Mali pour le moment — bientôt dans le reste de l&apos;Afrique de l&apos;Ouest.
         </p>
+
+        {compteRequis && (
+          <div className="status-banner" style={{ marginBottom: 24 }}>
+            <span className="status-dot"></span>
+            <div>
+              <strong>Un compte entreprise est nécessaire pour publier une mission</strong>
+              <span className="sub">
+                Créez-en un ci-dessous, ou si vous en avez déjà un,{" "}
+                <Link href="/connexion?redirect=/publier" style={{ textDecoration: "underline" }}>
+                  connectez-vous
+                </Link>
+                .
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="track-toggle" role="tablist" aria-label="Type de compte" style={{ marginBottom: 24 }}>
           <button

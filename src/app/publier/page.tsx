@@ -9,8 +9,8 @@ export const metadata = { title: "Publier une mission — Kôrô" };
 export default async function PublierPage() {
   const session = await getSession();
 
-  if (!session) redirect("/connexion?redirect=/publier");
-  if (session.role !== "entreprise") redirect("/?msg=entreprise_requise");
+  if (!session) redirect("/inscription?role=entreprise&msg=compte_entreprise_requis");
+  if (session.role !== "entreprise") redirect("/inscription?role=entreprise&msg=compte_entreprise_requis");
 
   const entreprise = await db.entreprise.findUniqueOrThrow({ where: { userId: session.userId } });
 

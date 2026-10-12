@@ -2,12 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { JobCard } from "@/components/JobCard";
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ msg?: string }>;
-}) {
-  const { msg } = await searchParams;
+export default async function HomePage() {
   const missions = await db.mission.findMany({
     where: { statut: "publiee" },
     include: {
@@ -19,23 +14,6 @@ export default async function HomePage({
 
   return (
     <>
-      {msg === "entreprise_requise" && (
-        <div className="wrap" style={{ paddingTop: 24 }}>
-          <div className="status-banner">
-            <span className="status-dot"></span>
-            <div>
-              <strong>Publier une mission nécessite un compte entreprise</strong>
-              <span className="sub">
-                Votre compte actuel n&apos;en est pas un.{" "}
-                <Link href="/inscription?role=entreprise" style={{ textDecoration: "underline" }}>
-                  Créer un compte entreprise
-                </Link>{" "}
-                ou connectez-vous avec un compte entreprise existant.
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
       <section className="hero">
         <div className="wrap hero-grid">
           <div>
