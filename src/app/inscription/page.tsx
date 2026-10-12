@@ -145,16 +145,18 @@ export default function InscriptionPage() {
             <fieldset>
               <legend>Votre entreprise</legend>
               <div className="field">
-                <label htmlFor="nomEntreprise">Nom de l&apos;entreprise</label>
-                <input type="text" id="nomEntreprise" name="nomEntreprise" required />
+                <label htmlFor="nomEntreprise">Nom de l&apos;entreprise ou votre nom</label>
+                <input type="text" id="nomEntreprise" name="nomEntreprise" placeholder="Ex. Ma Société SARL, ou simplement votre nom et prénom" required />
+                <p className="hint">Vous n&apos;avez pas besoin d&apos;être une entreprise enregistrée pour publier une mission (garde d&apos;enfants, aide à domicile...).</p>
               </div>
               <div className="field-row">
                 <div className="field">
-                  <label htmlFor="identifiantLegal">Identifiant légal (RCCM ou équivalent)</label>
+                  <label htmlFor="identifiantLegal">Identifiant légal (RCCM ou équivalent) — optionnel</label>
                   <input type="text" id="identifiantLegal" name="identifiantLegal" />
+                  <p className="hint">Laissez vide si vous n&apos;êtes pas une entreprise enregistrée.</p>
                 </div>
                 <div className="field">
-                  <label htmlFor="adresse">Adresse</label>
+                  <label htmlFor="adresse">Adresse — optionnel</label>
                   <input type="text" id="adresse" name="adresse" placeholder="Ex. Hamdallaye ACI 2000, Bamako" />
                 </div>
               </div>
