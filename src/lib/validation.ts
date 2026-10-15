@@ -28,6 +28,15 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Mot de passe requis"),
 });
 
+export const demanderResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Email invalide"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "Jeton manquant"),
+  password: z.string().min(8, "8 caractères minimum"),
+});
+
 export const createMissionSchema = z.object({
   titre: z.string().trim().min(1, "Intitulé requis"),
   description: z.string().trim().min(1, "Description requise"),

@@ -24,6 +24,11 @@ export default function ConnexionPage() {
           <div className="field">
             <label htmlFor="password">Mot de passe</label>
             <input type="password" id="password" name="password" required />
+            <p className="hint" style={{ textAlign: "right", marginTop: 4 }}>
+              <Link href="/mot-de-passe-oublie" style={{ textDecoration: "underline" }}>
+                Mot de passe oublié ?
+              </Link>
+            </p>
           </div>
 
           {state.error && <p className="form-error">{state.error}</p>}

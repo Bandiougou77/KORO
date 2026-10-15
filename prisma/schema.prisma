@@ -150,20 +150,35 @@ model User {
   email          String   @unique
   telephone      String?
   motDePasseHash String
+  tokenVersion   Int      @default(0)
   paysId         String
   pays           Pays     @relation(fields: [paysId], references: [id])
   langue         String   @default("fr")
   compteSuspendu Boolean  @default(false)
   dateCreation   DateTime @default(now())
 
-  profilCandidat     ProfilCandidat?
-  entreprise         Entreprise?
-  signalementsEmis   Signalement[]     @relation("SignalementsEmis")
-  signalementsRecus  Signalement[]     @relation("SignalementsRecus")
-  litigesOuverts     Litige[]
-  messagesEnvoyes    MessageInterne[]
+  profilCandidat        ProfilCandidat?
+  entreprise            Entreprise?
+  signalementsEmis      Signalement[]         @relation("SignalementsEmis")
+  signalementsRecus     Signalement[]         @relation("SignalementsRecus")
+  litigesOuverts        Litige[]
+  messagesEnvoyes       MessageInterne[]
+  passwordResetTokens   PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  dateCreation DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model ProfilCandidat {
