@@ -40,7 +40,7 @@ export default async function OffreDetailPage({ params }: { params: Promise<{ id
       })
     : null;
 
-  const { net } = calculerRepartition(mission.montantBrut, mission.tauxCommission);
+  const { montantPrestataire } = calculerRepartition(mission.montantBrut, mission.tauxCommission);
   const unite = uniteFromTypeTarif(mission.typeTarif);
   const missionFermee = mission.statut !== "publiee";
 
@@ -116,12 +116,12 @@ export default async function OffreDetailPage({ params }: { params: Promise<{ id
           <aside className="apply-card">
             <div className="preview-tag">Ce que vous recevrez</div>
             <div className="amount-big mono">
-              {formatMontant(net, mission.devise)}
+              {formatMontant(montantPrestataire, mission.devise)}
               {unite && <span style={{ fontSize: 16 }}>/{unite}</span>}
             </div>
             <div className="amount-note">
-              {formatMontant(mission.montantBrut, mission.devise, unite)} payé par l&apos;entreprise, moins{" "}
-              {mission.tauxCommission}% de commission Kôrô
+              Montant intégral, sans déduction — la commission Kôrô ({mission.tauxCommission}%) est à la charge de
+              l&apos;entreprise, ajoutée par-dessus.
             </div>
 
             {missionFermee ? (

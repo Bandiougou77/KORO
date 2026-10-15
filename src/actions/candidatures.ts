@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { autoriserSequestre } from "@/lib/payment";
 import { entrepriseEstVerifiee } from "@/lib/verification";
+import { assertTransitionAutorisee } from "@/lib/missionTransitions";
 import { applyCandidatureSchema, acceptCandidatureSchema } from "@/lib/validation";
 import type { ActionState } from "./types";
 
@@ -123,10 +124,14 @@ export async function marquerMissionTerminee(
   if (!candidature) {
     return { error: "Vous n'êtes pas le candidat retenu pour cette mission." };
   }
-  if (candidature.mission.statut !== "paiement_securise") {
+  try {
+    assertTransitionAutorisee(candidature.mission.statut, "terminee");
+  } catch {
     return { error: "Cette mission ne peut pas être marquée comme terminée dans son état actuel." };
   }
 
+  // Date enregistrée côté serveur — c'est elle qui fait foi pour le délai de validation de
+  // 3 jours (src/lib/payment.ts::DELAI_VALIDATION_MS), jamais une valeur envoyée par le client.
   await db.mission.update({
     where: { id: missionId },
     data: { statut: "terminee", dateTerminee: new Date() },

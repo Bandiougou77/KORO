@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { getTauxCommission } from "@/lib/commission";
 import { entrepriseEstVerifiee } from "@/lib/verification";
+import { creerFraisPublicationPourMission, confirmerPublication } from "@/lib/fraisPublication";
+import { assertTransitionAutorisee } from "@/lib/missionTransitions";
 import { createMissionSchema } from "@/lib/validation";
 import type { ActionState } from "./types";
 
@@ -31,6 +33,8 @@ export async function createMission(
   });
   const taux = await getTauxCommission(entreprise.paysId, data.dureeType);
 
+  // "brouillon" : la mission n'est visible nulle part publiquement tant que la publication
+  // n'est pas confirmée (gratuite ou payée) — voir confirmerPublicationMission ci-dessous.
   const mission = await db.mission.create({
     data: {
       entrepriseId: session.userId,
@@ -46,13 +50,43 @@ export async function createMission(
       montantBrut: data.montantBrut,
       devise: entreprise.pays.devise,
       tauxCommission: taux,
-      statut: "publiee",
+      statut: "brouillon",
     },
   });
 
+  // Snapshot des frais de publication applicables MAINTENANT — indépendant de la commission
+  // (Paiement), jamais mélangé. Voir lib/fraisPublication.ts.
+  await creerFraisPublicationPourMission(mission.id, entreprise.paysId, entreprise.pays.devise);
+
+  redirect(`/publier/${mission.id}/confirmer`);
+}
+
+// Dernière étape avant publication réelle : affiche/recalcule le prix de publication côté
+// serveur (jamais le montant envoyé par le navigateur) et ne publie que si le prix affiché est
+// toujours celui en vigueur — voir lib/fraisPublication.ts::confirmerPublication.
+export async function confirmerPublicationMission(
+  missionId: string,
+  _prevState: ActionState,
+): Promise<ActionState> {
+  const session = await requireRole("entreprise");
+
+  const mission = await db.mission.findUniqueOrThrow({ where: { id: missionId } });
+  if (mission.entrepriseId !== session.userId) {
+    return { error: "Vous ne pouvez pas publier cette mission." };
+  }
+  if (mission.statut !== "brouillon") {
+    return { error: "Cette mission n'est plus en attente de publication." };
+  }
+
+  try {
+    await confirmerPublication(missionId, mission.paysId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Publication impossible." };
+  }
+
   revalidatePath("/offres");
   revalidatePath("/entreprise/dashboard");
-  redirect(`/offres/${mission.id}`);
+  redirect(`/offres/${missionId}`);
 }
 
 export async function cancelMission(
@@ -65,8 +99,14 @@ export async function cancelMission(
   if (mission.entrepriseId !== session.userId) {
     return { error: "Vous ne pouvez pas annuler cette mission." };
   }
-  if (mission.statut === "payee") {
-    return { error: "Impossible d'annuler une mission déjà payée." };
+  // Transition centralisée (src/lib/missionTransitions.ts) : une mission ne peut plus être
+  // annulée dès qu'un paiement est séquestré ou en cours de traitement — pas seulement "payee"
+  // comme avant (le garde-fou historique était trop permissif : une mission en litige ou déjà
+  // séquestrée ne devrait jamais pouvoir être annulée directement).
+  try {
+    assertTransitionAutorisee(mission.statut, "annulee");
+  } catch {
+    return { error: "Cette mission ne peut plus être annulée dans son état actuel." };
   }
 
   await db.mission.update({ where: { id: missionId }, data: { statut: "annulee" } });

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { formatMontant, uniteFromTypeTarif } from "@/lib/currency";
-import { liberationsAutomatiquesEnRetard } from "@/lib/payment";
+import { DELAI_VALIDATION_MS } from "@/lib/payment";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MessageThread } from "@/components/MessageThread";
 import { ReportButton } from "@/components/ReportButton";
@@ -12,13 +12,9 @@ import { marquerMissionTerminee } from "@/actions/candidatures";
 
 export const metadata = { title: "Mon compte — Kôrô" };
 
-const DELAI_LIBERATION_MS = 48 * 60 * 60 * 1000;
-
 export default async function MonComptePage() {
   const session = await getSession();
   if (!session || session.role !== "candidat") redirect("/connexion?redirect=/moncompte");
-
-  await liberationsAutomatiquesEnRetard();
 
   const candidatures = await db.candidature.findMany({
     where: { candidatId: session.userId },
@@ -37,7 +33,7 @@ export default async function MonComptePage() {
 
   const paiements = candidatures.filter((c) => c.mission.paiement?.statut === "effectue");
   const missionActive = candidatures.find(
-    (c) => c.statut === "acceptee" && ["paiement_securise", "terminee", "litige"].includes(c.mission.statut),
+    (c) => c.statut === "acceptee" && ["paiement_securise", "terminee", "litige", "remboursee"].includes(c.mission.statut),
   );
   const solde = await db.solde.findUnique({ where: { candidatId: session.userId } });
 
@@ -74,7 +70,7 @@ export default async function MonComptePage() {
                 {(() => {
                   const mission = missionActive.mission;
                   const dateLimite = mission.dateTerminee
-                    ? new Date(mission.dateTerminee.getTime() + DELAI_LIBERATION_MS)
+                    ? new Date(mission.dateTerminee.getTime() + DELAI_VALIDATION_MS)
                     : null;
                   const messages = mission.messages.map((m) => ({
                     id: m.id,
@@ -83,7 +79,11 @@ export default async function MonComptePage() {
                     expediteurId: m.expediteurId,
                     expediteurLabel:
                       m.expediteur.entreprise?.nomEntreprise ??
-                      (m.expediteur.profilCandidat ? `${m.expediteur.profilCandidat.prenom} ${m.expediteur.profilCandidat.nom}` : "—"),
+                      (m.expediteur.profilCandidat
+                        ? `${m.expediteur.profilCandidat.prenom} ${m.expediteur.profilCandidat.nom}`
+                        : m.expediteur.role === "admin"
+                          ? "Kôrô (équipe)"
+                          : "—"),
                   }));
 
                   return (
@@ -115,14 +115,30 @@ export default async function MonComptePage() {
 
                       {mission.statut === "terminee" && dateLimite && (
                         <p className="hint" style={{ marginBottom: 12 }}>
-                          En attente de confirmation de l&apos;entreprise — libération automatique le{" "}
-                          {dateLimite.toLocaleString("fr-FR")} si pas de réponse.
+                          En attente de confirmation de l&apos;entreprise jusqu&apos;au{" "}
+                          {dateLimite.toLocaleString("fr-FR")} — passé ce délai sans réponse, Kôrô examine la
+                          mission pour débloquer le versement.
                         </p>
                       )}
 
-                      {mission.statut === "litige" && (
+                      {mission.statut === "litige" && mission.litige?.statut !== "resolu" && (
                         <p className="hint" style={{ marginBottom: 12, color: "#C24A32" }}>
                           Un litige est ouvert sur cette mission — le paiement reste bloqué en attendant un examen.
+                          {mission.litige?.statut === "informations_demandees" &&
+                            " L'équipe Kôrô a demandé des précisions, consultez la messagerie ci-dessous."}
+                        </p>
+                      )}
+
+                      {mission.litige?.statut === "resolu" && (
+                        <p className="hint" style={{ marginBottom: 12 }}>
+                          Litige résolu{mission.litige.dateResolution ? ` le ${mission.litige.dateResolution.toLocaleDateString("fr-FR")}` : ""}
+                          {mission.litige.motifDecision ? ` — ${mission.litige.motifDecision}` : ""}
+                        </p>
+                      )}
+
+                      {mission.statut === "remboursee" && (
+                        <p className="hint" style={{ marginBottom: 12 }}>
+                          L&apos;entreprise a été remboursée suite à la résolution d&apos;un litige sur cette mission.
                         </p>
                       )}
 

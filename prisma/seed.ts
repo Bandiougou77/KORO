@@ -42,9 +42,10 @@ async function main() {
     ],
   });
 
+  // Taux fixe à 5%, quelle que soit la durée — voir src/lib/commissionConfig.ts.
   await db.configCommission.createMany({
     data: [
-      { paysId: mali.id, dureeType: "courte", taux: 6 },
+      { paysId: mali.id, dureeType: "courte", taux: 5 },
       { paysId: mali.id, dureeType: "longue", taux: 5 },
     ],
   });
@@ -139,7 +140,7 @@ async function main() {
     },
   ];
 
-  const tauxParDuree: Record<"courte" | "longue", number> = { courte: 6, longue: 5 };
+  const TAUX_COMMISSION = 5; // Taux fixe, quelle que soit la durée — voir lib/commissionConfig.ts.
 
   let firstMissionId: string | null = null;
 
@@ -172,7 +173,7 @@ async function main() {
         paysId: mali.id,
         devise: "FCFA",
         ...e.mission,
-        tauxCommission: tauxParDuree[e.mission.dureeType],
+        tauxCommission: TAUX_COMMISSION,
         statut: "publiee",
       },
     });

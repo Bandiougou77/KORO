@@ -66,6 +66,19 @@ export const litigeSchema = z.object({
   description: z.string().trim().min(1, "Description requise").max(2000),
 });
 
+export const resolutionLitigeSchema = z.object({
+  decision: z.enum(["paiement_candidat", "remboursement_entreprise", "partage", "compte_suspendu"]),
+  motifDecision: z.string().trim().min(1, "Le motif de la décision est requis").max(2000),
+  // Uniquement pertinent pour "partage" : part versée au prestataire, le reste étant remboursé.
+  montantVersePrestataire: z.coerce.number().min(0).optional().or(z.literal("")),
+  // Uniquement pertinent pour "compte_suspendu" : lequel des deux comptes de la mission suspendre.
+  utilisateurASuspendre: z.string().trim().optional().or(z.literal("")),
+});
+
+export const demandeInformationsLitigeSchema = z.object({
+  message: z.string().trim().min(1, "Message requis").max(2000),
+});
+
 export const signalementSchema = z.object({
   motif: z.enum(["non_paiement", "guet_apens_suspecte", "menace_extorsion", "autre"]),
   description: z.string().trim().min(1, "Description requise").max(2000),
@@ -78,4 +91,12 @@ export const messageSchema = z.object({
 export const virementCommissionSchema = z.object({
   compteBancaireId: z.string().trim().min(1),
   montant: z.coerce.number().positive("Le montant doit être positif"),
+});
+
+export const definirFraisPublicationSchema = z.object({
+  paysId: z.string().trim().min(1),
+  // z.coerce.boolean() serait incorrect ici : Boolean("false") vaut true en JS — on part d'un
+  // <select> à valeurs "true"/"false" littérales, pas d'une case à cocher.
+  actif: z.enum(["true", "false"]).transform((v) => v === "true"),
+  montant: z.coerce.number().min(0, "Le montant ne peut pas être négatif"),
 });

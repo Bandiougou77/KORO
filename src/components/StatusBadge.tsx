@@ -8,6 +8,7 @@ const missionLabels: Record<string, string> = {
   payee: "Payée",
   annulee: "Annulée",
   litige: "Litige",
+  remboursee: "Remboursée",
 };
 
 const candidatureLabels: Record<string, string> = {
@@ -19,7 +20,7 @@ const candidatureLabels: Record<string, string> = {
 export function StatusBadge({ statut, kind }: { statut: string; kind: "mission" | "candidature" }) {
   const label = (kind === "mission" ? missionLabels : candidatureLabels)[statut] ?? statut;
   const isPositive = statut === "acceptee" || statut === "payee" || statut === "publiee";
-  const isLitige = statut === "litige";
+  const isLitige = statut === "litige" || statut === "remboursee";
 
   let style: React.CSSProperties | undefined;
   if (isLitige) style = { background: "rgba(179,64,42,0.25)", color: "#FFB8A8" };

@@ -62,6 +62,9 @@ enum StatutMission {
   payee
   annulee
   litige
+  // Issue d'un litige résolu en faveur (totale ou partielle) de l'entreprise — distinct
+  // d'"annulee" (qui couvre une annulation avant tout litige).
+  remboursee
 }
 
 enum StatutCandidature {
@@ -75,6 +78,9 @@ enum StatutPaiement {
   retenu_en_sequestre
   effectue
   echoue
+  // Conséquence d'un litige résolu en faveur de l'entreprise — jamais un vrai transfert tant
+  // qu'aucun prestataire réel n'est intégré, voir lib/litiges.ts.
+  rembourse
 }
 
 enum TypeMouvementSolde {
@@ -115,6 +121,9 @@ enum StatutSignalement {
 enum StatutLitige {
   ouvert
   en_examen
+  // L'admin a demandé des précisions à une partie (via la messagerie interne de la mission)
+  // avant de pouvoir trancher.
+  informations_demandees
   resolu
 }
 
@@ -138,6 +147,7 @@ model Pays {
   entreprises            Entreprise[]
   missions               Mission[]
   configsCommission      ConfigCommission[]
+  configsFraisPublication ConfigFraisPublication[]
   comptesBancairesAdmin  CompteBancaireAdmin[]
   virementsCommission    VirementCommission[]
 
@@ -162,6 +172,7 @@ model User {
   signalementsEmis      Signalement[]         @relation("SignalementsEmis")
   signalementsRecus     Signalement[]         @relation("SignalementsRecus")
   litigesOuverts        Litige[]
+  litigesResolus        Litige[]          @relation("LitigesResolus")
   messagesEnvoyes       MessageInterne[]
   passwordResetTokens   PasswordResetToken[]
 
@@ -235,6 +246,7 @@ model Mission {
 
   candidatures    Candidature[]
   paiement        Paiement?
+  fraisPublication FraisPublication?
   mouvementsSolde MouvementSolde[]
   litige          Litige?
   signalements    Signalement[]
@@ -267,6 +279,11 @@ model Paiement {
   montantBrut                   Float
   commission                    Float
   fraisPaiement                 Float
+  // Commission + frais à la charge de l'entreprise, ajoutés par-dessus montantBrut (pas déduits
+  // du prestataire) : total réellement dû/séquestré côté entreprise.
+  montantTotalEntreprise        Float          @default(0)
+  // Toujours égal à montantBrut sous ce modèle (le prestataire reçoit le montant intégral,
+  // jamais réduit) — conservé tel quel pour éviter une migration de renommage.
   montantNetCandidat            Float
   statut                        StatutPaiement @default(en_attente)
   datePaiement                  DateTime?
@@ -285,6 +302,46 @@ model ConfigCommission {
 
   @@index([paysId, dureeType, dateEffective])
   @@map("config_commissions")
+}
+
+// Configuration des frais de publication — même esprit que ConfigCommission (jamais modifiée
+// rétroactivement : on insère une nouvelle ligne, dateEffective versionne dans le temps).
+// Gratuit par défaut (actif: false) au lancement.
+model ConfigFraisPublication {
+  id            String   @id @default(cuid())
+  paysId        String
+  pays          Pays     @relation(fields: [paysId], references: [id])
+  actif         Boolean  @default(false)
+  montant       Float    @default(0)
+  devise        Devise
+  dateEffective DateTime @default(now())
+
+  @@index([paysId, dateEffective])
+  @@map("config_frais_publication")
+}
+
+enum StatutFraisPublication {
+  gratuit
+  en_attente
+  paye
+  echoue
+  rembourse
+}
+
+// Transaction de frais de publication — INDÉPENDANTE de Paiement (commission sur la
+// prestation) : deux revenus distincts, jamais mélangés, voir lib/fraisPublication.ts.
+model FraisPublication {
+  id                           String                 @id @default(cuid())
+  missionId                    String                 @unique
+  mission                      Mission                @relation(fields: [missionId], references: [id])
+  montant                      Float
+  devise                       Devise
+  statut                       StatutFraisPublication @default(gratuit)
+  datePaiement                 DateTime?
+  referencePrestatairePaiement String?
+  dateCreation                 DateTime               @default(now())
+
+  @@map("frais_publication")
 }
 
 model Solde {
@@ -371,9 +428,17 @@ model Litige {
   elementsFournis String?
   statut          StatutLitige    @default(ouvert)
   decision        DecisionLitige?
+  // Traçabilité de la décision : motif de l'admin (distinct du motif d'ouverture ci-dessus),
+  // qui a tranché, et la conséquence financière exacte le cas échéant.
+  motifDecision               String?
+  resoluParId                 String?
+  resoluPar                   User?    @relation("LitigesResolus", fields: [resoluParId], references: [id])
+  montantRembourseEntreprise  Float?
+  montantVersePrestataire     Float?
   dateOuverture   DateTime        @default(now())
   dateResolution  DateTime?
 
+  @@index([statut])
   @@map("litiges")
 }
 

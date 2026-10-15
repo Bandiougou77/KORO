@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { JobCard } from "@/components/JobCard";
+import { TAUX_COMMISSION_AFFICHAGE } from "@/lib/commissionConfig";
 
 export default async function HomePage() {
   const missions = await db.mission.findMany({
@@ -19,27 +20,28 @@ export default async function HomePage() {
           <div>
             <div className="eyebrow">Kôrô, &quot;le lien&quot; en mandingue · Bamako, Mali — bientôt dans toute l&apos;Afrique de l&apos;Ouest</div>
             <h1>
-              Trouve une mission.
+              Le terrain de vos ambitions.
               <br />
-              <em>Sans agence entre les deux.</em>
+              <em>Trouvez les compétences, lancez vos missions.</em>
             </h1>
             <p className="lead">
-              Kôrô connecte directement les entreprises qui recrutent et les personnes qui
-              cherchent une mission — courte, longue, sur site ou à distance. Pas de dossier qui
-              traîne, pas d&apos;intermédiaire lourd : l&apos;offre, le contact, la mission.
+              Kôrô est l&apos;espace où une entreprise publie un besoin, trouve la bonne personne,
+              paie et suit sa mission jusqu&apos;à sa réalisation — sans agence lourde, sans
+              paiement en dehors de la plateforme. Pour le candidat : profil et candidature
+              toujours gratuits.
             </p>
             <div className="hero-actions">
-              <Link href="/offres" className="btn btn-gold btn-lg">
-                Voir les annonces
+              <Link href="/publier" className="btn btn-gold btn-lg">
+                Publier une mission
               </Link>
-              <Link href="/publier" className="btn btn-ghost btn-lg" style={{ borderColor: "var(--line-dark)" }}>
-                Publier une offre →
+              <Link href="/offres" className="btn btn-ghost btn-lg" style={{ borderColor: "var(--line-dark)" }}>
+                Découvrir les missions →
               </Link>
             </div>
             <div className="hero-stats">
               <div className="stat">
-                <div className="num mono">6%</div>
-                <div className="label">commission moyenne</div>
+                <div className="num mono">{TAUX_COMMISSION_AFFICHAGE}%</div>
+                <div className="label">commission, à la charge de l&apos;entreprise</div>
               </div>
               <div className="stat">
                 <div className="num mono">48h</div>
@@ -47,7 +49,7 @@ export default async function HomePage() {
               </div>
               <div className="stat">
                 <div className="num mono">0 FCFA</div>
-                <div className="label">frais côté candidat</div>
+                <div className="label">profil et candidature côté candidat</div>
               </div>
             </div>
           </div>
@@ -61,20 +63,20 @@ export default async function HomePage() {
               <div className="pipe-title">Atelier Bozola — Logistique</div>
               <div className="pipe-meta">Mission courte · Bamako</div>
               <div className="pipe-row">
-                <span className="pipe-meta mono">2 500 FCFA/h proposé</span>
+                <span className="pipe-meta mono">2 500 FCFA/h + {TAUX_COMMISSION_AFFICHAGE}% payé</span>
                 <span className="pipe-chip">Publié</span>
               </div>
             </div>
 
             <div className="flow-node">
-              <div className="pct mono">6%</div>
-              <div className="pct-label">retenu</div>
+              <div className="pct mono">+{TAUX_COMMISSION_AFFICHAGE}%</div>
+              <div className="pct-label">commission entreprise</div>
             </div>
 
             <div className="pipe-col worker">
               <div className="pipe-tag">Candidat</div>
               <div className="pipe-title">Mission acceptée</div>
-              <div className="pipe-meta">2 335 FCFA/h reçu · viré sous 48h</div>
+              <div className="pipe-meta">2 500 FCFA/h reçu intégralement</div>
               <div className="pipe-row">
                 <span className="pipe-meta mono">2 500 FCFA brut</span>
                 <span className="pipe-chip" style={{ background: "var(--ink)", color: "var(--paper)" }}>
@@ -140,8 +142,8 @@ export default async function HomePage() {
               <span className="step-num">03</span>
               <h3>La mission se paie via Kôrô</h3>
               <p>
-                L&apos;entreprise règle le montant convenu. La commission est prélevée
-                automatiquement, le reste est versé au candidat sous 48h.
+                L&apos;entreprise règle le montant convenu plus la commission Kôrô, qui s&apos;ajoute
+                par-dessus. Le candidat reçoit l&apos;intégralité du montant convenu, jamais réduit.
               </p>
             </div>
           </div>
@@ -161,7 +163,8 @@ export default async function HomePage() {
                 l&apos;employeur : pas de gestion de paie, pas de garantie financière à
                 constituer, pas de statut de &quot;loueur de main-d&apos;œuvre&quot;. La
                 plateforme facture uniquement sa mise en relation et son service de paiement
-                sécurisé — un pourcentage prélevé sur le montant versé par l&apos;entreprise.
+                sécurisé — un pourcentage ajouté par-dessus le montant convenu, à la charge de
+                l&apos;entreprise.
               </p>
             </div>
             <div className="calc-card">
@@ -169,20 +172,20 @@ export default async function HomePage() {
                 Exemple de mission
               </div>
               <div className="calc-row">
-                <span>Montant proposé par l&apos;entreprise</span>
+                <span>Montant convenu avec le candidat</span>
                 <span className="val">50 000 FCFA</span>
               </div>
               <div className="calc-row">
-                <span>Commission Kôrô (6%)</span>
-                <span className="val">− 3 000 FCFA</span>
+                <span>Commission Kôrô ({TAUX_COMMISSION_AFFICHAGE}%)</span>
+                <span className="val">+ 2 500 FCFA</span>
               </div>
               <div className="calc-row">
                 <span>Frais de paiement sécurisé</span>
-                <span className="val">− 300 FCFA</span>
+                <span className="val">+ 300 FCFA</span>
               </div>
               <div className="calc-row total">
-                <span>Versé au candidat</span>
-                <span className="val">46 700 FCFA</span>
+                <span>Payé par l&apos;entreprise</span>
+                <span className="val">52 800 FCFA</span>
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { formatMontant, uniteFromTypeTarif } from "@/lib/currency";
 import { moyenPaiementLabel } from "@/lib/moyenPaiement";
-import { liberationsAutomatiquesEnRetard } from "@/lib/payment";
+import { DELAI_VALIDATION_MS } from "@/lib/payment";
 import { StatusBadge } from "@/components/StatusBadge";
 import { MessageThread } from "@/components/MessageThread";
 import { LitigeButton } from "@/components/LitigeButton";
@@ -17,13 +17,9 @@ import { AcceptForm } from "./AcceptForm";
 
 export const metadata = { title: "Dashboard entreprise — Kôrô" };
 
-const DELAI_LIBERATION_MS = 48 * 60 * 60 * 1000;
-
 export default async function EntrepriseDashboardPage() {
   const session = await getSession();
   if (!session || session.role !== "entreprise") redirect("/connexion?redirect=/entreprise/dashboard");
-
-  await liberationsAutomatiquesEnRetard();
 
   const missions = await db.mission.findMany({
     where: { entrepriseId: session.userId },
@@ -63,9 +59,9 @@ export default async function EntrepriseDashboardPage() {
 
           {missions.map((mission) => {
             const unite = uniteFromTypeTarif(mission.typeTarif);
-            const peutAnnuler = mission.statut === "publiee";
+            const peutAnnuler = mission.statut === "publiee" || mission.statut === "brouillon";
             const dateLimite = mission.dateTerminee
-              ? new Date(mission.dateTerminee.getTime() + DELAI_LIBERATION_MS)
+              ? new Date(mission.dateTerminee.getTime() + DELAI_VALIDATION_MS)
               : null;
             const messages = mission.messages.map((m) => ({
               id: m.id,
@@ -74,7 +70,11 @@ export default async function EntrepriseDashboardPage() {
               expediteurId: m.expediteurId,
               expediteurLabel:
                 m.expediteur.entreprise?.nomEntreprise ??
-                (m.expediteur.profilCandidat ? `${m.expediteur.profilCandidat.prenom} ${m.expediteur.profilCandidat.nom}` : "—"),
+                (m.expediteur.profilCandidat
+                  ? `${m.expediteur.profilCandidat.prenom} ${m.expediteur.profilCandidat.nom}`
+                  : m.expediteur.role === "admin"
+                    ? "Kôrô (équipe)"
+                    : "—"),
             }));
 
             return (
@@ -82,7 +82,10 @@ export default async function EntrepriseDashboardPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 17, marginBottom: 4 }}>
-                      <Link href={`/offres/${mission.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                      <Link
+                        href={mission.statut === "brouillon" ? `/publier/${mission.id}/confirmer` : `/offres/${mission.id}`}
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
                         {mission.titre}
                       </Link>
                     </div>
@@ -112,6 +115,13 @@ export default async function EntrepriseDashboardPage() {
                   </div>
                 </div>
 
+                {mission.statut === "brouillon" && (
+                  <p className="hint" style={{ marginBottom: 16 }}>
+                    Publication non confirmée —{" "}
+                    <Link href={`/publier/${mission.id}/confirmer`}>terminer la publication</Link>.
+                  </p>
+                )}
+
                 {mission.statut === "paiement_securise" && (
                   <p className="hint" style={{ marginBottom: 16 }}>
                     Paiement sécurisé — en attente que le candidat marque la mission comme terminée.
@@ -120,14 +130,30 @@ export default async function EntrepriseDashboardPage() {
 
                 {mission.statut === "terminee" && dateLimite && (
                   <p className="hint" style={{ marginBottom: 16 }}>
-                    Le candidat a marqué la mission terminée. Sans confirmation ni litige avant le{" "}
-                    {dateLimite.toLocaleString("fr-FR")}, le paiement sera libéré automatiquement.
+                    Le candidat a marqué la mission terminée. Vous avez jusqu&apos;au{" "}
+                    {dateLimite.toLocaleString("fr-FR")} pour confirmer ou ouvrir un litige — passé ce délai,
+                    la mission est transmise à l&apos;équipe Kôrô pour validation.
                   </p>
                 )}
 
-                {mission.statut === "litige" && (
+                {mission.statut === "litige" && mission.litige?.statut !== "resolu" && (
                   <p className="hint" style={{ marginBottom: 16, color: "#C24A32" }}>
                     Un litige est ouvert sur cette mission — le paiement reste bloqué en attendant un examen.
+                    {mission.litige?.statut === "informations_demandees" &&
+                      " L'équipe Kôrô a demandé des précisions, consultez la messagerie ci-dessous."}
+                  </p>
+                )}
+
+                {mission.litige?.statut === "resolu" && (
+                  <p className="hint" style={{ marginBottom: 16 }}>
+                    Litige résolu{mission.litige.dateResolution ? ` le ${mission.litige.dateResolution.toLocaleDateString("fr-FR")}` : ""}
+                    {mission.litige.motifDecision ? ` — ${mission.litige.motifDecision}` : ""}
+                  </p>
+                )}
+
+                {mission.statut === "remboursee" && (
+                  <p className="hint" style={{ marginBottom: 16 }}>
+                    Cette mission a été remboursée suite à la résolution d&apos;un litige.
                   </p>
                 )}
 
@@ -182,7 +208,7 @@ export default async function EntrepriseDashboardPage() {
                   </div>
                 )}
 
-                {["paiement_securise", "terminee", "litige", "payee"].includes(mission.statut) && (
+                {["paiement_securise", "terminee", "litige", "payee", "remboursee"].includes(mission.statut) && (
                   <MessageThread missionId={mission.id} messages={messages} currentUserId={session.userId} />
                 )}
               </div>

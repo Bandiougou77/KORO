@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CommissionSimulator } from "./CommissionSimulator";
+import { TAUX_COMMISSION_AFFICHAGE } from "@/lib/commissionConfig";
 
 export const metadata = { title: "Commission — Kôrô" };
 
@@ -26,18 +27,17 @@ export default function CommissionPage() {
               <span className="step-num">Qui paie ?</span>
               <h3>L&apos;entreprise, jamais le candidat</h3>
               <p>
-                La commission est prélevée sur le montant versé par l&apos;entreprise. Le
-                candidat ne débourse jamais rien : ni frais d&apos;inscription, ni frais de
-                dossier, ni commission sur son salaire.
+                La commission s&apos;ajoute par-dessus le montant convenu avec le candidat. Il
+                reçoit toujours l&apos;intégralité de ce montant : ni frais d&apos;inscription, ni
+                frais de dossier, ni commission sur ce qu&apos;il touche.
               </p>
             </div>
             <div className="step">
               <span className="step-num">Combien ?</span>
-              <h3>Entre 5% et 6% du montant</h3>
+              <h3>{TAUX_COMMISSION_AFFICHAGE}% du montant de la mission</h3>
               <p>
-                Le taux dépend de la durée de la mission : 6% pour les missions courtes (moins de
-                3 mois), 5% pour les missions longues. Le taux exact est toujours affiché avant
-                publication et avant candidature.
+                Un taux unique, quelle que soit la durée de la mission. Le montant exact est
+                toujours affiché avant publication et avant confirmation du paiement.
               </p>
             </div>
             <div className="step">

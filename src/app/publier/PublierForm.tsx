@@ -5,8 +5,7 @@ import { createMission } from "@/actions/missions";
 import { initialActionState } from "@/actions/types";
 import { calculerRepartition } from "@/lib/repartition";
 import { formatMontant, uniteFromTypeTarif } from "@/lib/currency";
-
-const tauxParDuree: Record<string, number> = { courte: 6, longue: 5 };
+import { TAUX_COMMISSION_AFFICHAGE } from "@/lib/commissionConfig";
 
 export function PublierForm({ nomEntreprise }: { nomEntreprise: string }) {
   const [state, formAction, pending] = useActionState(createMission, initialActionState);
@@ -18,8 +17,7 @@ export function PublierForm({ nomEntreprise }: { nomEntreprise: string }) {
   const devise = "FCFA" as const;
   const [mode, setMode] = useState<"sur_site" | "distance" | "les_deux">("sur_site");
 
-  const taux = tauxParDuree[dureeType];
-  const { commission, frais, net } = calculerRepartition(montant, taux);
+  const { commission, frais, totalEntreprise } = calculerRepartition(montant, TAUX_COMMISSION_AFFICHAGE);
   const unite = uniteFromTypeTarif(typeTarif);
 
   const initials = nomEntreprise
@@ -131,7 +129,7 @@ export function PublierForm({ nomEntreprise }: { nomEntreprise: string }) {
               onChange={(e) => setMontant(parseFloat(e.target.value) || 0)}
               required
             />
-            <p className="hint">C&apos;est le montant que vous acceptez de payer. La commission s&apos;ajoute par-dessus, jamais retirée de ce chiffre.</p>
+            <p className="hint">C&apos;est le montant que recevra le candidat, en intégralité. La commission et les frais de paiement s&apos;ajoutent par-dessus pour votre paiement total — voir l&apos;aperçu.</p>
           </div>
         </fieldset>
 
@@ -147,7 +145,7 @@ export function PublierForm({ nomEntreprise }: { nomEntreprise: string }) {
 
       <aside className="sticky-preview">
         <div className="preview-card">
-          <div className="preview-tag">Aperçu — ce que voit le candidat</div>
+          <div className="preview-tag">Aperçu de l&apos;annonce</div>
           <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 16 }}>
             <div className="job-logo">{initials || "?"}</div>
             <div>
@@ -161,20 +159,20 @@ export function PublierForm({ nomEntreprise }: { nomEntreprise: string }) {
           </div>
           <div className="preview-est">
             <div className="row">
-              <span>Montant que vous payez</span>
+              <span>Montant proposé au candidat</span>
               <span className="mono">{formatMontant(montant, devise, unite)}</span>
             </div>
             <div className="row">
-              <span>Commission Kôrô ({taux}%)</span>
-              <span className="mono">− {formatMontant(commission, devise)}</span>
+              <span>Commission Kôrô ({TAUX_COMMISSION_AFFICHAGE}%)</span>
+              <span className="mono">+ {formatMontant(commission, devise)}</span>
             </div>
             <div className="row">
               <span>Frais de paiement (0,6%)</span>
-              <span className="mono">− {formatMontant(frais, devise)}</span>
+              <span className="mono">+ {formatMontant(frais, devise)}</span>
             </div>
             <div className="row total">
-              <span>Reçu par le candidat</span>
-              <span className="mono">{formatMontant(net, devise, unite)}</span>
+              <span>Total que vous payez</span>
+              <span className="mono">{formatMontant(totalEntreprise, devise, unite)}</span>
             </div>
           </div>
         </div>

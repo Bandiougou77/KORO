@@ -16,10 +16,15 @@ export function MessageThread({
   missionId,
   messages,
   currentUserId,
+  lectureSeule = false,
 }: {
   missionId: string;
   messages: MessageThreadMessage[];
   currentUserId: string;
+  // Pour un admin qui consulte le dossier sans être partie prenante de la mission —
+  // envoyerMessage() refuserait son envoi (voir actions/messages.ts::verifierParticipant) ;
+  // utilise plutôt demanderInformationsLitige pour écrire dans ce fil depuis l'admin.
+  lectureSeule?: boolean;
 }) {
   const action = envoyerMessage.bind(null, missionId);
   const [state, formAction, pending] = useActionState(action, initialActionState);
@@ -58,13 +63,17 @@ export function MessageThread({
         </div>
       )}
 
-      <form action={formAction} style={{ display: "flex", gap: 8 }}>
-        <input type="text" name="contenu" placeholder="Écrire un message..." required style={{ flex: 1 }} />
-        <button type="submit" className="btn btn-dark" disabled={pending}>
-          Envoyer
-        </button>
-      </form>
-      {state.error && <p className="form-error" style={{ marginTop: 10, marginBottom: 0 }}>{state.error}</p>}
+      {!lectureSeule && (
+        <>
+          <form action={formAction} style={{ display: "flex", gap: 8 }}>
+            <input type="text" name="contenu" placeholder="Écrire un message..." required style={{ flex: 1 }} />
+            <button type="submit" className="btn btn-dark" disabled={pending}>
+              Envoyer
+            </button>
+          </form>
+          {state.error && <p className="form-error" style={{ marginTop: 10, marginBottom: 0 }}>{state.error}</p>}
+        </>
+      )}
     </div>
   );
 }

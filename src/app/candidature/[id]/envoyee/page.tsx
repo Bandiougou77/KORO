@@ -23,7 +23,7 @@ export default async function CandidatureEnvoyeePage({
   if (!candidature || candidature.candidatId !== session.userId) notFound();
 
   const { mission } = candidature;
-  const { net } = calculerRepartition(mission.montantBrut, mission.tauxCommission);
+  const { montantPrestataire } = calculerRepartition(mission.montantBrut, mission.tauxCommission);
   const unite = uniteFromTypeTarif(mission.typeTarif);
 
   return (
@@ -64,10 +64,11 @@ export default async function CandidatureEnvoyeePage({
           <div className="tl-item">
             <div className="tl-num">4</div>
             <div className="tl-body">
-              <h3>Vous êtes payé sous 48h</h3>
+              <h3>Vous êtes payé après validation</h3>
               <p>
-                Dès que l&apos;entreprise règle la mission, Kôrô vous reverse votre part —{" "}
-                {formatMontant(net, mission.devise, unite)}, commission déjà déduite — directement sur votre compte.
+                Une fois la mission validée, Kôrô vous verse l&apos;intégralité du montant convenu —{" "}
+                {formatMontant(montantPrestataire, mission.devise, unite)}, sans aucune déduction — directement sur
+                votre compte.
               </p>
             </div>
           </div>

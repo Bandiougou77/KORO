@@ -23,7 +23,6 @@ export type JobCardMission = Mission & {
 };
 
 export function JobCard({ mission }: { mission: JobCardMission }) {
-  const taux = mission.dureeType === "courte" ? 6 : 5;
   const nouvelleEntreprise = mission.entreprise._count?.missions === 0;
   return (
     <Link href={`/offres/${mission.id}`} className="job-card" style={{ textDecoration: "none" }}>
@@ -46,7 +45,7 @@ export function JobCard({ mission }: { mission: JobCardMission }) {
         <div className="amount mono">
           {formatMontant(mission.montantBrut, mission.devise, uniteFromTypeTarif(mission.typeTarif))}
         </div>
-        <div className="fee">− {taux}% commission</div>
+        <div className="fee">Montant intégral — commission à la charge de l&apos;entreprise ({mission.tauxCommission}%)</div>
       </div>
     </Link>
   );
