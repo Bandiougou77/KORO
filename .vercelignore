@@ -1,0 +1,7 @@
+# `vercel deploy` (CLI) n'honore PAS automatiquement .gitignore pour déterminer ce qui est
+# envoyé — contrairement aux déploiements déclenchés par push Git. Sans ce fichier, .env local
+# (secrets de dev, RATE_LIMIT_FAKE, etc.) est embarqué tel quel dans chaque déploiement CLI.
+.env*
+
+# Base de test jetable, jamais pertinente côté déploiement.
+prisma/test.db*
