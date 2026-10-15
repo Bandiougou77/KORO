@@ -7,6 +7,8 @@ import { getPaysActif } from "@/lib/pays";
 import { creerVerificationEntreprise } from "@/lib/verification";
 import { creerTokenReset, reinitialiserMotDePasse } from "@/lib/passwordReset";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { verifierLimiteConnexion } from "@/lib/rateLimiter";
+import { getClientIp } from "@/lib/clientIp";
 import {
   loginSchema,
   registerCandidatSchema,
@@ -107,6 +109,16 @@ export async function login(_prevState: ActionState, formData: FormData): Promis
     return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide" };
   }
   const { email, password } = parsed.data;
+
+  // Calculée sur l'email soumis AVANT toute recherche en base — voir lib/rateLimiter.ts.
+  const ip = await getClientIp();
+  const resultatLimite = await verifierLimiteConnexion(ip, email);
+  if (!resultatLimite.autorise) {
+    if (resultatLimite.raison === "service_indisponible") {
+      return { error: "Service temporairement indisponible. Réessayez dans un instant." };
+    }
+    return { error: "Trop de tentatives. Réessayez dans quelques minutes." };
+  }
 
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.motDePasseHash))) {
