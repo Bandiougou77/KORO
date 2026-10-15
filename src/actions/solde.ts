@@ -18,12 +18,7 @@ export async function demanderRetrait(
   }
 
   try {
-    await effectuerRetrait(
-      session.userId,
-      parsed.data.montant,
-      parsed.data.moyenRetrait,
-      parsed.data.identifiantDestinataire,
-    );
+    await effectuerRetrait(session.userId, parsed.data.montant);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Retrait impossible." };
   }

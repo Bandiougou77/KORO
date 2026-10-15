@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Devise, MoyenPaiement } from "@/generated/prisma/enums";
+import type { Devise } from "@/generated/prisma/enums";
 
 export async function crediterSolde(
   candidatId: string,
@@ -18,15 +18,18 @@ export async function crediterSolde(
   });
 }
 
-export async function effectuerRetrait(
-  candidatId: string,
-  montant: number,
-  moyenRetrait: MoyenPaiement,
-  identifiantDestinataire: string,
-) {
+export async function effectuerRetrait(candidatId: string, montant: number) {
   const solde = await db.solde.findUnique({ where: { candidatId } });
   if (!solde || montant > solde.montantDisponible) {
     throw new Error("Solde insuffisant pour ce retrait.");
+  }
+
+  // La destination du retrait est toujours celle déclarée au profil, jamais un champ libre —
+  // sinon un compte compromis (ou un circuit de blanchiment) pourrait vider le solde vers
+  // n'importe quel numéro tiers. Voir [[koro-securite-sequestre]].
+  const profil = await db.profilCandidat.findUniqueOrThrow({ where: { userId: candidatId } });
+  if (!profil.moyenPaiementPrefere || !profil.identifiantPaiement) {
+    throw new Error("Complétez votre moyen de paiement dans votre profil avant de retirer de l'argent.");
   }
 
   const retrait = await db.retrait.create({
@@ -34,8 +37,8 @@ export async function effectuerRetrait(
       candidatId,
       montant,
       devise: solde.devise,
-      moyenRetrait,
-      identifiantDestinataire,
+      moyenRetrait: profil.moyenPaiementPrefere,
+      identifiantDestinataire: profil.identifiantPaiement,
       // Simulé : traité instantanément, comme processPayment (pas de prestataire réel en phase 1).
       statut: "recu",
       dateTraitement: new Date(),

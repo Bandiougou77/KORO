@@ -7,14 +7,15 @@ import { moyenPaiementLabel } from "@/lib/moyenPaiement";
 
 export function RetraitForm({
   soldeDisponible,
-  moyensDisponibles,
-  identifiantParDefaut,
+  moyenPaiementPrefere,
+  identifiantPaiement,
 }: {
   soldeDisponible: number;
-  moyensDisponibles: string[];
-  identifiantParDefaut: string;
+  moyenPaiementPrefere: string | null;
+  identifiantPaiement: string | null;
 }) {
   const [state, formAction, pending] = useActionState(demanderRetrait, initialActionState);
+  const profilIncomplet = !moyenPaiementPrefere || !identifiantPaiement;
 
   return (
     <form action={formAction} className="form-card" aria-label="Retirer mon argent">
@@ -34,27 +35,20 @@ export function RetraitForm({
           />
           <p className="hint">Jusqu&apos;à hauteur de votre solde disponible.</p>
         </div>
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="moyenRetrait">Moyen de retrait</label>
-            <select id="moyenRetrait" name="moyenRetrait" defaultValue={moyensDisponibles[0]}>
-              {moyensDisponibles.map((m) => (
-                <option key={m} value={m}>
-                  {moyenPaiementLabel(m)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="identifiantDestinataire">Numéro / identifiant</label>
-            <input
-              type="text"
-              id="identifiantDestinataire"
-              name="identifiantDestinataire"
-              defaultValue={identifiantParDefaut}
-              required
-            />
-          </div>
+        <div className="field">
+          <span className="hint" style={{ display: "block", marginBottom: 4 }}>
+            Destination du retrait
+          </span>
+          {profilIncomplet ? (
+            <p className="form-error">
+              Aucun moyen de paiement enregistré sur votre profil. Contactez le support pour le configurer avant de
+              pouvoir retirer de l&apos;argent.
+            </p>
+          ) : (
+            <p style={{ fontWeight: 600 }}>
+              {moyenPaiementLabel(moyenPaiementPrefere)} · {identifiantPaiement}
+            </p>
+          )}
         </div>
       </fieldset>
 
@@ -64,7 +58,7 @@ export function RetraitForm({
         type="submit"
         className="btn btn-gold btn-lg"
         style={{ width: "100%", justifyContent: "center" }}
-        disabled={pending || soldeDisponible <= 0}
+        disabled={pending || soldeDisponible <= 0 || profilIncomplet}
       >
         {pending ? "Retrait en cours…" : "Retirer mon argent"}
       </button>

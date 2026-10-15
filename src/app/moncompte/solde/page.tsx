@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { formatMontant } from "@/lib/currency";
-import { parseMoyensPaiement, moyenPaiementLabel } from "@/lib/pays";
+import { moyenPaiementLabel } from "@/lib/pays";
 import { RetraitForm } from "./RetraitForm";
 
 export const metadata = { title: "Mon solde — Kôrô" };
@@ -28,8 +28,6 @@ export default async function SoldePage() {
     include: { mission: true, retrait: true },
     orderBy: { dateCreation: "desc" },
   });
-
-  const moyensDisponibles = parseMoyensPaiement(user.pays.moyensPaiementDisponibles);
 
   return (
     <div className="page-head">
@@ -78,8 +76,8 @@ export default async function SoldePage() {
 
         <RetraitForm
           soldeDisponible={Math.floor(solde.montantDisponible)}
-          moyensDisponibles={moyensDisponibles}
-          identifiantParDefaut={user.profilCandidat?.identifiantPaiement ?? ""}
+          moyenPaiementPrefere={user.profilCandidat?.moyenPaiementPrefere ?? null}
+          identifiantPaiement={user.profilCandidat?.identifiantPaiement ?? null}
         />
       </div>
     </div>

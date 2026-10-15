@@ -50,8 +50,6 @@ export const acceptCandidatureSchema = z.object({
 
 export const retraitSchema = z.object({
   montant: z.coerce.number().positive("Le montant doit être positif"),
-  moyenRetrait: z.enum(["orange_money", "wave", "moov_money", "stripe", "virement"]),
-  identifiantDestinataire: z.string().trim().min(1, "Identifiant requis"),
 });
 
 export const litigeSchema = z.object({
